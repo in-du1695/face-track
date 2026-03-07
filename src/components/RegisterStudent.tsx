@@ -68,7 +68,7 @@ const RegisterStudent = ({ onRegistered }: RegisterStudentProps) => {
             <Label htmlFor="rollNo">Roll Number</Label>
             <Input
               id="rollNo"
-              placeholder="CS2024001"
+              placeholder="234G1AXXXX"
               value={rollNo}
               onChange={(e) => setRollNo(e.target.value)}
             />
