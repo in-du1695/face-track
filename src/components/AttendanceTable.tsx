@@ -1,6 +1,7 @@
 import { FileSpreadsheet, Download, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -26,19 +27,27 @@ interface AttendanceTableProps {
 }
 
 const AttendanceTable = ({ records, students, onRefresh }: AttendanceTableProps) => {
+  const [branchFilter, setBranchFilter] = useState("");
+const [sectionFilter, setSectionFilter] = useState("");
   const exportToExcel = () => {
     if (records.length === 0) {
       toast.error("No attendance records to export");
       return;
     }
 
-    const data = records.map((r, i) => ({
-      "S.No": i + 1,
-      "Student Name": r.studentName,
-      "Roll Number": r.rollNo,
-      Date: r.date,
-      Time: new Date(r.timestamp).toLocaleTimeString(),
-    }));
+    const data = records.map((r, i) => {
+  const student = students.find((s) => s.rollNo === r.rollNo);
+
+  return {
+    "S.No": i + 1,
+    "Student Name": r.studentName,
+    "Roll Number": r.rollNo,
+    Branch: student?.branch || "",
+    Section: student?.section || "",
+    Date: r.date,
+    Time: new Date(r.timestamp).toLocaleTimeString(),
+  };
+});
 
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -65,17 +74,30 @@ const AttendanceTable = ({ records, students, onRefresh }: AttendanceTableProps)
   };
 
   const today = new Date().toISOString().split("T")[0];
-  const todayRecords = records.filter((r) => r.date === today);
+const todayRecords = records.filter((r) => {
+  const student = students.find((s) => s.rollNo === r.rollNo);
 
+
+  return (
+    r.date === today &&
+    (!branchFilter || student?.branch === branchFilter) &&
+    (!sectionFilter || student?.section === sectionFilter)
+  );
+});
+const filteredStudents = students.filter(
+  (s) =>
+    (!branchFilter || s.branch === branchFilter) &&
+    (!sectionFilter || s.section === sectionFilter)
+);
   return (
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total Students", value: students.length },
-          { label: "Present Today", value: todayRecords.length },
-          { label: "Absent Today", value: Math.max(0, students.length - todayRecords.length) },
-          { label: "Total Records", value: records.length },
+          { label: "Total Students", value: filteredStudents.length },
+{ label: "Present Today", value: todayRecords.length },
+{ label: "Absent Today", value: filteredStudents.length - todayRecords.length },
+{ label: "Total Records", value: records.length },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-4 text-center">
@@ -98,32 +120,67 @@ const AttendanceTable = ({ records, students, onRefresh }: AttendanceTableProps)
             Export Excel
           </Button>
         </CardHeader>
+        
         <CardContent>
+          <div className="flex gap-4 mb-4">
+  <select
+    className="border rounded p-2"
+    value={branchFilter}
+    onChange={(e) => setBranchFilter(e.target.value)}
+  >
+    <option value="">All Branches</option>
+    <option value="CSM">CSM</option>
+    <option value="CSE">CSE</option>
+    <option value="ECE">ECE</option>
+    <option value="EEE">EEE</option>
+  </select>
+
+  <select
+    className="border rounded p-2"
+    value={sectionFilter}
+    onChange={(e) => setSectionFilter(e.target.value)}
+  >
+    <option value="">All Sections</option>
+    <option value="A">A</option>
+    <option value="B">B</option>
+    <option value="C">C</option>
+  </select>
+</div>
           {todayRecords.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               No attendance recorded today
             </p>
+            
           ) : (
+            
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Roll No</TableHead>
+                  <TableHead>Branch</TableHead>
+                  <TableHead>Section</TableHead>
                   <TableHead>Time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {todayRecords.map((r, i) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-mono text-muted-foreground">{i + 1}</TableCell>
-                    <TableCell className="font-medium">{r.studentName}</TableCell>
-                    <TableCell className="font-mono">{r.rollNo}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(r.timestamp).toLocaleTimeString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
+               {todayRecords.map((r, i) => {
+  const student = students.find((s) => s.rollNo === r.rollNo);
+
+  return (
+    <TableRow key={r.id}>
+      <TableCell className="font-mono text-muted-foreground">{i + 1}</TableCell>
+      <TableCell className="font-medium">{r.studentName}</TableCell>
+      <TableCell className="font-mono">{r.rollNo}</TableCell>
+      <TableCell>{student?.branch}</TableCell>
+      <TableCell>{student?.section}</TableCell>
+      <TableCell className="text-muted-foreground">
+        {new Date(r.timestamp).toLocaleTimeString()}
+      </TableCell>
+    </TableRow>
+  );
+})}
               </TableBody>
             </Table>
           )}
@@ -137,9 +194,9 @@ const AttendanceTable = ({ records, students, onRefresh }: AttendanceTableProps)
         </CardHeader>
         <CardContent>
           {students.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              No students registered yet
-            </p>
+           <p className="text-center text-muted-foreground py-8">
+  No students registered yet
+</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {students.map((s) => (
@@ -160,8 +217,9 @@ const AttendanceTable = ({ records, students, onRefresh }: AttendanceTableProps)
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{s.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{s.rollNo}</p>
-                  </div>
+<p className="text-xs text-muted-foreground font-mono">
+  {s.rollNo} • {s.branch} - {s.section}
+</p>                  </div>
                   <Button
                     variant="ghost"
                     size="icon"

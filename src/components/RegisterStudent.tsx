@@ -15,7 +15,10 @@ interface RegisterStudentProps {
 const RegisterStudent = ({ onRegistered }: RegisterStudentProps) => {
   const [name, setName] = useState("");
   const [rollNo, setRollNo] = useState("");
+  const [branch, setBranch] = useState("");
+  const [section, setSection] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
+  
 
   const handleCapture = (dataUrl: string) => {
     setPhoto(dataUrl);
@@ -23,8 +26,8 @@ const RegisterStudent = ({ onRegistered }: RegisterStudentProps) => {
   };
 
   const handleSubmit = () => {
-    if (!name.trim() || !rollNo.trim()) {
-      toast.error("Please fill in name and roll number");
+    if (!name.trim() || !rollNo.trim() || !branch || !section) {
+      toast.error("Please fill in all fields");
       return;
     }
     if (!photo) {
@@ -32,16 +35,20 @@ const RegisterStudent = ({ onRegistered }: RegisterStudentProps) => {
       return;
     }
     saveStudent({
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      rollNo: rollNo.trim(),
-      photoDataUrl: photo,
-      registeredAt: new Date().toISOString(),
-    });
+     id: crypto.randomUUID(),
+     name: name.trim(),
+     rollNo: rollNo.trim(),
+     branch,
+     section,
+     photoDataUrl: photo,
+     registeredAt: new Date().toISOString(),
+     });
     toast.success(`${name} registered successfully!`);
     setName("");
-    setRollNo("");
-    setPhoto(null);
+     setRollNo("");
+     setBranch("");
+     setSection("");
+     setPhoto(null);
     onRegistered();
   };
 
@@ -73,6 +80,25 @@ const RegisterStudent = ({ onRegistered }: RegisterStudentProps) => {
               onChange={(e) => setRollNo(e.target.value)}
             />
           </div>
+          <div className="space-y-2">
+  <Label htmlFor="branch">Branch</Label>
+  <Input
+    id="branch"
+    placeholder="CSE / CSM / ECE / EEE"
+    value={branch}
+    onChange={(e) => setBranch(e.target.value)}
+  />
+</div>
+
+<div className="space-y-2">
+  <Label htmlFor="section">Section</Label>
+  <Input
+    id="section"
+    placeholder="A / B / C"
+    value={section}
+    onChange={(e) => setSection(e.target.value)}
+  />
+</div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
